@@ -1,0 +1,147 @@
+services:
+  code-server:
+    image: lscr.io/linuxserver/code-server:latest
+    container_name: code-server
+    user: root
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - SUDO_PASSWORD=test
+      - DOCKER_MODS=linuxserver/mods:code-server-python3 linuxserver/mods:code-server-java11
+    volumes:
+      - ./shared-data:/config/workspace
+    ports:
+      - 8443:8443
+    restart: unless-stopped
+    networks:
+      - dev
+  spark-master:
+    image: docker.io/bitnami/spark:3.5-debian-12 #https://hub.docker.com/r/bitnami/spark
+    container_name: spark-master
+    hostname: spark-master
+    ports:
+      - 8081:8081
+      - 4040:4040
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+      - SPARK_MASTER_WEBUI_PORT=8081
+    restart: unless-stopped
+    networks:
+      - dev
+  spark-worker-01:
+    container_name: spark-worker-01
+    hostname: spark-worker-01
+    image: docker.io/bitnami/spark:3.5-debian-12 #https://hub.docker.com/r/bitnami/spark
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=6
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    restart: unless-stopped
+    depends_on:
+      - spark-master
+    volumes:
+      - ./shared-data:/config/workspace
+    networks:
+      - dev
+  spark-worker-02:
+    container_name: spark-worker-02
+    hostname: spark-worker-02
+    image: docker.io/bitnami/spark:3.5-debian-12 #https://hub.docker.com/r/bitnami/spark
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=6
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+      - SPARK_USER=spark
+    restart: unless-stopped
+    depends_on:
+      - spark-master
+    volumes:
+      - ./shared-data:/config/workspace
+    networks:
+      - dev
+  hadoop-namenode:
+    image: apache/hadoop:3.3.6
+    container_name: hadoop-namenode
+    hostname: hadoop-namenode
+    user: root
+    env_file:
+      - ./.env
+    volumes:
+      - ./shared-data/hadoop:/opt/hadoop/etc/hadoop
+    ports:
+      - "9870:9870"
+      - "8020:8020"
+    restart: unless-stopped
+    networks:
+      - dev
+    command: ["/bin/bash", "/opt/hadoop/etc/hadoop/start-hdfs.sh"]
+  hadoop-datanode-01:
+    image: apache/hadoop:3.3.6
+    container_name: hadoop-datanode-01
+    hostname: hadoop-datanode-01
+    user: root
+    env_file:
+      - ./.env
+    volumes:
+      - ./shared-data/hadoop:/opt/hadoop/etc/hadoop
+    depends_on:
+      - hadoop-namenode
+    restart: unless-stopped
+    networks:
+      - dev
+    command: ["/bin/bash", "/opt/hadoop/etc/hadoop/init-datanode.sh"]
+  hadoop-datanode-02:
+    image: apache/hadoop:3.3.6
+    container_name: hadoop-datanode-02
+    hostname: hadoop-datanode-02
+    user: root
+    env_file:
+      - ./.env
+    volumes:
+      - ./shared-data/hadoop:/opt/hadoop/etc/hadoop
+    depends_on:
+      - hadoop-namenode
+    restart: unless-stopped
+    networks:
+      - dev
+    command: ["/bin/bash", "/opt/hadoop/etc/hadoop/init-datanode.sh"]
+  hadoop-resourcemanager:
+    image: apache/hadoop:3.3.6
+    hostname: hadoop-resourcemanager
+    container_name: hadoop-resourcemanager
+    command: ["yarn", "resourcemanager"]
+    ports:
+      - 8088:8088
+    env_file:
+      - ./.env
+    networks:
+      - dev
+  hadoop-nodemanager:
+    image: apache/hadoop:3.3.6
+    container_name: hadoop-nodemanager
+    hostname: hadoop-nodemanager
+    command: ["yarn", "nodemanager"]
+    env_file:
+      - ./.env
+    restart: unless-stopped
+    networks:
+      - dev
+networks:
+  dev:
+    driver: bridge
