@@ -9,3 +9,4 @@ code-server
 *.parquet
 *.zip
 *.gz
+*.xml

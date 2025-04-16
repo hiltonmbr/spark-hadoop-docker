@@ -1,3 +1,0 @@
-dfs.replication: 2
-dfs.namenode.rpc-address: hadoop-namenode:8020
-dfs.client.use.datanode.hostname: true

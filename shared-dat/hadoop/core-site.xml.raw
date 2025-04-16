@@ -1,4 +1,0 @@
-fs.default.name: hdfs://hadoop-namenode:8020
-fs.defaultFS: hdfs://hadoop-namenode:8020
-fs.defaultFS: hdfs://hadoop-namenode:8020
-fs.defaultFS: hdfs://hadoop-namenode:8020
