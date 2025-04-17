@@ -10,3 +10,4 @@ code-server
 *.zip
 *.gz
 *.xml
+*.raw
